@@ -178,13 +178,17 @@ class TestResult:
     reasons: List[str]
 
 
-def delay(ms):
+def delay(ms: int) -> None:
     time.sleep(ms / 1000.0)
 
 
-def clear():
+def clear() -> None:
     sys.stdout.write(CLEAR_SCREEN)
     sys.stdout.flush()
+
+
+def read_input(prompt: str = "INPUT > ") -> str:
+    return input(prompt).strip()
 
 
 def show_menu(step: Step) -> None:
@@ -297,13 +301,24 @@ def advance(step: Step, ans: int, config: CarConfig) -> Step:
     return step
 
 
+def handle_run_test(ans: int, config: CarConfig) -> None:
+    if ans == 1:
+        run_produced_car(config)
+        delay(2000)
+    elif ans == 2:
+        print("Test...")
+        delay(1500)
+        test_produced_car(config)
+        delay(2000)
+
+
 def main() -> None:
     step = Step.CAR_TYPE
     config = CarConfig()
 
     while True:
         show_menu(step)
-        buf = input("INPUT > ").strip()
+        buf = read_input()
 
         if buf == "exit":
             print("바이바이")
@@ -325,14 +340,7 @@ def main() -> None:
             continue
 
         if step == Step.RUN_TEST:
-            if ans == 1:
-                run_produced_car(config)
-                delay(2000)
-            elif ans == 2:
-                print("Test...")
-                delay(1500)
-                test_produced_car(config)
-                delay(2000)
+            handle_run_test(ans, config)
             continue
 
         step = advance(step, ans, config)

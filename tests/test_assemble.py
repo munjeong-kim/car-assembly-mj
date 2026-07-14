@@ -447,3 +447,39 @@ def test_is_valid_range_upper_bound_matches_enum_size(step, enum_cls):
     # enum's member count for every step, regardless of the lower bound.
     assert assemble.is_valid_range(step, len(enum_cls)) is True
     assert assemble.is_valid_range(step, len(enum_cls) + 1) is False
+
+
+# ---------------------------------------------------------------------------
+# read_input / handle_run_test : main()'s input()/delay() side effects wrapped
+# behind thin, mockable seams so the surrounding logic stays testable.
+# ---------------------------------------------------------------------------
+
+def test_read_input_strips_whitespace(monkeypatch):
+    monkeypatch.setattr("builtins.input", lambda prompt="": "  42  ")
+    assert assemble.read_input() == "42"
+
+
+def test_handle_run_test_run_prints_assembly_result(monkeypatch, capsys):
+    monkeypatch.setattr(assemble, "delay", lambda ms: None)
+    config = make_config(CarType.SEDAN, Engine.GM, Brake.MANDO, Steering.MOBIS)
+    assemble.handle_run_test(1, config)
+    out = capsys.readouterr().out
+    assert "자동차가 동작됩니다." in out
+
+
+def test_handle_run_test_test_prints_fail_reasons(monkeypatch, capsys):
+    monkeypatch.setattr(assemble, "delay", lambda ms: None)
+    config = make_config(CarType.SEDAN, Engine.GM, Brake.CONTINENTAL, Steering.MOBIS)
+    assemble.handle_run_test(2, config)
+    out = capsys.readouterr().out
+    assert "Test..." in out
+    assert "FAIL" in out
+    assert "Sedan에는 Continental제동장치 사용 불가" in out
+
+
+def test_handle_run_test_ignores_out_of_range_answer(monkeypatch, capsys):
+    monkeypatch.setattr(assemble, "delay", lambda ms: None)
+    config = make_config(CarType.SEDAN, Engine.GM, Brake.MANDO, Steering.MOBIS)
+    assemble.handle_run_test(99, config)
+    out = capsys.readouterr().out
+    assert out == ""
