@@ -402,3 +402,48 @@ def test_show_menu_run_test(capsys):
     assert "멋진 차량이 완성되었습니다." in out
     assert "1. RUN" in out
     assert "2. Test" in out
+
+
+# ---------------------------------------------------------------------------
+# show_menu / is_valid_range : options and ranges must track Enum membership,
+# not a hardcoded count. These tests derive their expectations from the
+# Enum/labels themselves, so they still pass if a member is added or removed
+# without anyone touching show_menu()/STEP_RANGES by hand.
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize(
+    "step, enum_cls",
+    [
+        (Step.CAR_TYPE, CarType),
+        (Step.ENGINE, Engine),
+        (Step.BRAKE, Brake),
+        (Step.STEERING, Steering),
+    ],
+)
+def test_show_menu_option_count_matches_enum_size(step, enum_cls, capsys):
+    assemble.show_menu(step)
+    out = capsys.readouterr().out
+    labels = assemble.STEP_LABELS[step]
+    expected_lines = [f"{i}. {labels[member]}" for i, member in enumerate(enum_cls, start=1)]
+
+    assert len(expected_lines) == len(enum_cls)
+    for line in expected_lines:
+        assert line in out
+    # no extra numbered option beyond the last enum member
+    assert f"{len(enum_cls) + 1}. " not in out
+
+
+@pytest.mark.parametrize(
+    "step, enum_cls",
+    [
+        (Step.CAR_TYPE, CarType),
+        (Step.ENGINE, Engine),
+        (Step.BRAKE, Brake),
+        (Step.STEERING, Steering),
+    ],
+)
+def test_is_valid_range_upper_bound_matches_enum_size(step, enum_cls):
+    # Valid range is always 0/1..len(enum_cls) — the upper bound equals the
+    # enum's member count for every step, regardless of the lower bound.
+    assert assemble.is_valid_range(step, len(enum_cls)) is True
+    assert assemble.is_valid_range(step, len(enum_cls) + 1) is False
